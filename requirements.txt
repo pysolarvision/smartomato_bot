@@ -15,7 +15,9 @@ packaging==24.0
 pillow==10.2.0
 pluggy==1.4.0
 pydantic==2.5.3
+pydantic-settings==2.2.1
 pydantic_core==2.14.6
 pytest==8.0.2
+python-dotenv==1.0.1
 typing_extensions==4.10.0
 yarl==1.9.4

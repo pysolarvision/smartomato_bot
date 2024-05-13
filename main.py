@@ -5,13 +5,12 @@ from aiogram import Bot, Dispatcher, types, F
 from aiogram.enums import ParseMode
 from aiogram.fsm.context import FSMContext
 from aiogram.client.default import DefaultBotProperties
-
-import config
-from config import PATH_LOAD, PATH_UPLOAD_V1, PATH_UPLOAD_V2
+from config import Config
 
 from routers import router as main_router
 from routers.commands.helpers import create_folder, image_resizer
 
+config = Config()
 dp = Dispatcher()
 dp.include_router(main_router)
 
@@ -22,9 +21,9 @@ async def download_documents(msg: types.Message, state: FSMContext):
 
     user_id: int = msg.from_user.id
 
-    create_folder(PATH_LOAD, user_id)
-    create_folder(PATH_UPLOAD_V1, user_id)
-    create_folder(PATH_UPLOAD_V2, user_id)
+    create_folder(str(config.path_load), user_id)
+    create_folder(str(config.path_upload_v1), user_id)
+    create_folder(str(config.path_upload_v2), user_id)
 
     file_id: str = msg.document.file_id
     file = await msg.bot.get_file(file_id)
@@ -35,20 +34,20 @@ async def download_documents(msg: types.Message, state: FSMContext):
     cut_bottom_value = int(user_data.get('cut_bottom', 0))
 
     await msg.bot.download_file(file_path=file_path,
-                                destination=f'{PATH_LOAD}/{user_id}/{msg.document.file_name}')
+                                destination=f'{str(config.path_load)}/{user_id}/{msg.document.file_name}')
 
     loop = asyncio.get_event_loop()
     try:
         processed_image_v1 = await loop.run_in_executor(None,
                                                         image_resizer,
-                                                        f'{PATH_LOAD}/{user_id}/{msg.document.file_name}',
+                                                        f'{str(config.path_load)}/{user_id}/{msg.document.file_name}',
                                                         cut_top_value,
                                                         cut_bottom_value,
                                                         1284,
                                                         2778)
         processed_image_v2 = await loop.run_in_executor(None,
                                                         image_resizer,
-                                                        f'{PATH_LOAD}/{user_id}/{msg.document.file_name}',
+                                                        f'{str(config.path_load)}/{user_id}/{msg.document.file_name}',
                                                         cut_top_value,
                                                         cut_bottom_value,
                                                         1242,
@@ -56,24 +55,24 @@ async def download_documents(msg: types.Message, state: FSMContext):
     except ValueError as e:
         await msg.reply(text=f"Ошибка при манипулировании изображением: {e}")
     else:
-        processed_image_v1.save(f'{PATH_UPLOAD_V1}/{user_id}/65_{msg.document.file_name}')
-        processed_image_v2.save(f'{PATH_UPLOAD_V2}/{user_id}/55_{msg.document.file_name}')
+        processed_image_v1.save(f'{str(config.path_upload_v1)}/{user_id}/65_{msg.document.file_name}')
+        processed_image_v2.save(f'{str(config.path_upload_v2)}/{user_id}/55_{msg.document.file_name}')
 
         await msg.reply_document(
             document=types.FSInputFile(
-                path=f'{PATH_UPLOAD_V1}/{user_id}/65_{msg.document.file_name}'),
+                path=f'{str(config.path_upload_v1)}/{user_id}/65_{msg.document.file_name}'),
             caption="Изображение 1284х2778 6.5")
 
         await msg.reply_document(
             document=types.FSInputFile(
-                path=f'{PATH_UPLOAD_V2}/{user_id}/55_{msg.document.file_name}'),
+                path=f'{str(config.path_upload_v2)}/{user_id}/55_{msg.document.file_name}'),
             caption="Изображение 1242х2208 5.5")
 
 
 async def main():
     logging.basicConfig(level=logging.DEBUG)
     bot = Bot(
-        token=config.BOT_TOKEN,
+        token=config.bot_token,
         default=DefaultBotProperties(parse_mode=ParseMode.HTML)
     )
     await dp.start_polling(bot)
